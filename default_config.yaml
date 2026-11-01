@@ -1,0 +1,8 @@
+# DeepSeek Credit Monitor defaults.
+# Secrets belong in the plugin settings UI (stored in user-space config.json), never here.
+deepseek_api_key: ""
+refresh_interval_seconds: 60
+balance_currency: "USD"
+low_balance_warning: 5.0
+critical_balance_warning: 1.0
+show_balance_in_ui: true

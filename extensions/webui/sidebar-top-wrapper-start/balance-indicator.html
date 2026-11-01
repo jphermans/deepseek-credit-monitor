@@ -1,0 +1,275 @@
+<script type="module">
+  import { store } from "/plugins/deepseek_credit_monitor/webui/deepseek-monitor-store.js";
+</script>
+
+<div x-data>
+  <template x-if="$store.deepseekCreditStore">
+    <div class="dcm-indicator-root"
+         x-create="$store.deepseekCreditStore.onOpen()"
+         x-destroy="$store.deepseekCreditStore.cleanup()"
+         @click.outside="$store.deepseekCreditStore.open = false"
+         @keydown.escape.window="$store.deepseekCreditStore.open = false">
+      <template x-if="$store.deepseekCreditStore.indicatorVisible">
+      <button type="button"
+              class="dcm-indicator"
+              :class="$store.deepseekCreditStore.statusClass"
+              :aria-label="`DeepSeek balance ${$store.deepseekCreditStore.balanceLabel}`"
+              :title="`DeepSeek balance ${$store.deepseekCreditStore.balanceLabel}`"
+              @click="$store.deepseekCreditStore.toggle()">
+        <span class="dcm-spinner" x-show="$store.deepseekCreditStore.status === 'loading'" aria-hidden="true"></span>
+        <span class="dcm-logo" x-show="$store.deepseekCreditStore.status !== 'loading'" aria-hidden="true"
+              x-text="$store.deepseekCreditStore.status === 'not_configured' ? '?' : '¥'"></span>
+        <span class="dcm-provider">DeepSeek</span>
+        <span class="dcm-value" x-text="$store.deepseekCreditStore.balanceLabel"></span>
+        <span class="dcm-status-chip" x-show="$store.deepseekCreditStore.statusLabel"
+              x-text="$store.deepseekCreditStore.statusLabel"></span>
+      </button>
+      </template>
+
+      <div class="dcm-popover"
+           x-show="$store.deepseekCreditStore.open"
+           x-transition.opacity
+           style="display: none;"
+           role="dialog"
+           aria-label="DeepSeek balance details">
+        <div class="dcm-popover-header">
+          <strong>DeepSeek balance</strong>
+          <button type="button" class="dcm-refresh"
+                  title="Refresh now"
+                  :aria-label="'Refresh now'"
+                  :disabled="$store.deepseekCreditStore.busy"
+                  @click="$store.deepseekCreditStore.manualRefresh()">
+            <x-icon name="refresh" aria-hidden="true"></x-icon>
+          </button>
+        </div>
+
+        <template x-if="$store.deepseekCreditStore.status === 'not_configured'">
+          <div class="dcm-row dcm-setup">
+            <span>Add a DeepSeek API key to see your balance.</span>
+            <button type="button" class="btn" @click="$store.deepseekCreditStore.openSettings()">Open settings</button>
+          </div>
+        </template>
+
+        <template x-if="$store.deepseekCreditStore.status !== 'not_configured'">
+          <div class="dcm-rows">
+            <div class="dcm-row">
+              <span>API status</span>
+              <span class="dcm-value-strong" x-text="$store.deepseekCreditStore.apiAvailabilityLabel"></span>
+            </div>
+            <template x-for="entry in $store.deepseekCreditStore.balances" :key="entry.currency">
+              <div class="dcm-currency-block">
+                <div class="dcm-currency-title">
+                  <span x-text="entry.currency"></span>
+                  <span class="dcm-value-strong" x-text="$store.deepseekCreditStore.formatEntry(entry, 'total_balance')"></span>
+                </div>
+                <div class="dcm-row">
+                  <span>Granted</span>
+                  <span x-text="$store.deepseekCreditStore.formatEntry(entry, 'granted_balance')"></span>
+                </div>
+                <div class="dcm-row">
+                  <span>Topped up</span>
+                  <span x-text="$store.deepseekCreditStore.formatEntry(entry, 'topped_up_balance')"></span>
+                </div>
+              </div>
+            </template>
+            <div class="dcm-row">
+              <span>State</span>
+              <span class="dcm-value-strong" x-text="$store.deepseekCreditStore.statusLabel || 'OK'"></span>
+            </div>
+            <div class="dcm-row">
+              <span>Updated</span>
+              <span class="dcm-value-strong" x-text="$store.deepseekCreditStore.lastUpdatedLabel || 'just now'"></span>
+            </div>
+          </div>
+        </template>
+
+        <button type="button" class="dcm-settings-link" @click="$store.deepseekCreditStore.openSettings()">
+          <x-icon name="settings" aria-hidden="true"></x-icon>
+          <span>Plugin settings</span>
+        </button>
+      </div>
+    </div>
+  </template>
+</div>
+
+<style>
+  .dcm-indicator-root {
+    position: relative;
+    margin: 0 var(--spacing-md);
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .dcm-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 30px;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.75rem;
+    line-height: 1.1;
+    cursor: pointer;
+    opacity: 0.9;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+  }
+
+  .dcm-indicator:hover, .dcm-indicator:focus-visible {
+    background-color: color-mix(in srgb, var(--color-border) 45%, transparent);
+    opacity: 1;
+  }
+
+  .dcm-logo {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .dcm-spinner {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    border: 2px solid color-mix(in srgb, var(--color-text) 25%, transparent);
+    border-top-color: var(--color-text);
+    border-radius: 50%;
+    animation: dcm-spin 0.8s linear infinite;
+  }
+
+  @keyframes dcm-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .dcm-provider {
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .dcm-value {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .dcm-status-chip {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .dcm-warning .dcm-status-chip {
+    background: color-mix(in srgb, var(--color-warning-text) 18%, transparent);
+    color: var(--color-warning-text);
+  }
+
+  .dcm-critical .dcm-status-chip {
+    background: color-mix(in srgb, var(--color-error-text) 18%, transparent);
+    color: var(--color-error-text);
+  }
+
+  .dcm-critical .dcm-value {
+    color: var(--color-error-text);
+  }
+
+  .dcm-unavailable .dcm-value,
+  .dcm-unknown .dcm-value {
+    opacity: 0.7;
+  }
+
+  .dcm-popover {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1050;
+    width: min(20rem, calc(100vw - 4rem));
+    padding: 1rem 1.2rem;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background-color: color-mix(in srgb, var(--color-panel) 95%, black 10%);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: min(32rem, calc(100vh - 6rem));
+    overflow-y: auto;
+  }
+
+  .dcm-popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+  }
+
+  .dcm-refresh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    opacity: 0.75;
+  }
+
+  .dcm-refresh:hover:not(:disabled) { opacity: 1; background-color: color-mix(in srgb, var(--color-border) 45%, transparent); }
+  .dcm-refresh:disabled { opacity: 0.4; cursor: default; }
+
+  .dcm-rows { display: flex; flex-direction: column; gap: 0.3rem; }
+
+  .dcm-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+  }
+
+  .dcm-row > span:first-child { opacity: 0.7; }
+  .dcm-value-strong { font-weight: 600; white-space: nowrap; }
+
+  .dcm-currency-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+    border-radius: 8px;
+  }
+
+  .dcm-currency-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .dcm-currency-title .dcm-value-strong { font-weight: 700; }
+
+  .dcm-setup { flex-direction: column; align-items: flex-start; gap: 0.4rem; font-size: 0.72rem; opacity: 0.85; }
+
+  .dcm-settings-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.72rem;
+    cursor: pointer;
+    opacity: 0.75;
+    text-align: left;
+  }
+
+  .dcm-settings-link:hover { opacity: 1; background-color: color-mix(in srgb, var(--color-border) 45%, transparent); }
+</style>
