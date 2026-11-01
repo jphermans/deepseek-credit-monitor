@@ -1,5 +1,7 @@
 # DeepSeek Credit Monitor
 
+![DeepSeek Credit Monitor](assets/repo-preview.png)
+
 An Agent Zero plugin that shows the current DeepSeek API account balance directly in the Agent Zero WebUI sidebar, with a details popover, low-balance alerts, and configurable refresh.
 
 ## About
