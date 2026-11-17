@@ -43,6 +43,8 @@ A Plugin Hub submission is planned.
 | `critical_balance_warning` | `1.0` | Critical threshold in the configured currency |
 | `show_balance_in_ui` | `true` | Show or hide the sidebar indicator |
 
+Saving settings with the unchanged `***` mask in the API key field keeps the stored key; emptying the field clears it.
+
 ## DeepSeek API
 
 The plugin calls the DeepSeek balance endpoint:

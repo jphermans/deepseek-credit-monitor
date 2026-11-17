@@ -1,5 +1,5 @@
 name: deepseek_credit_monitor
-version: 0.1.0
+version: 0.1.1
 title: DeepSeek Credit Monitor
 description: Displays the current DeepSeek API account balance in the Agent Zero WebUI sidebar.
 settings_sections:
